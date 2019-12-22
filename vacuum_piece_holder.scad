@@ -2,12 +2,12 @@
 use <mirror_copy.scad>
 
 /* Parameters */
-command_sticker_length=72;
+command_sticker_length=74;
 command_sticker_width=19;
 piece_ID=34.5;
 wall=2;
 angle=15;
-hook_length=30;
+hook_length=20;
 hook_base=5;
 weld=5;
 scribe_depth=0.35;

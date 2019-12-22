@@ -1,0 +1,10 @@
+task default: %w[build]
+
+escad_files = FileList['*.escad']
+
+task :build => escad_files.ext('stl')
+
+rule '.stl' => '.escad' do |f|
+  desc "#{f.name} from #{f.source}"
+  sh 'extopenscad', "-o#{f.name}", f.source
+end

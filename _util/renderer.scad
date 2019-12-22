@@ -1,0 +1,2 @@
+f=undef;
+import(f);

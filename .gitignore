@@ -1,0 +1,23 @@
+# build artifacts, caches, backup files
+*.stl
+*.3mf
+_util/renderer.png
+.ccls-cache/
+*.FCStd[1234]
+
+# retired, other people's stuff
+_archive/
+_retired/
+_otherpeople/
+_mp select mini/
+
+# printer vendors
+_vendor/
+_firmware/
+
+# other repos
+profiles/
+cat_door/
+
+# MacOS
+.DS_Store

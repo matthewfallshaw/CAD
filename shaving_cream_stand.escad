@@ -1,0 +1,38 @@
+int_dia=70;
+wall=2;
+height=5;
+feet=5;
+feet_dia=5;
+holes=5;
+
+union() {
+  // base plate
+  difference() {
+    cylinder(max(wall, 3),r=(int_dia+wall)/2);
+    for (th=[0:360/holes:360]) {
+      rotate(th) translate([int_dia/2/3*2,0,-1]) cylinder(wall*2+1,r=5/2);
+      rotate(th+360/holes/2) translate([int_dia/2/3,0,-1]) cylinder(wall*2+1,r=5/2);
+    }
+  }
+  // outer wall
+  linear_extrude(height) shell(wall) circle((int_dia+wall)/2);
+}
+
+/* UnionR3 0.0 [ */
+/*   DifferenceR3 0.0 [ */
+/*     ExtrudeR 0.0 (Circle 3.0) 1.0, */
+/*     Rotate3V 0.0 (0.0,0.0,1.0) (Translate3 (23.333333333333332,0.0,-1.0) (ExtrudeR 0.0 (Circle 5.0) 1.0)), */
+/*     Rotate3V 0.6283185307179586 (0.0,0.0,1.0) (Translate3 (11.666666666666666,0.0,-1.0) (ExtrudeR 0.0 (Circle 5.0) 1.0)), */
+/*     Rotate3V 1.2566370614359172 (0.0,0.0,1.0) (Translate3 (23.333333333333332,0.0,-1.0) (ExtrudeR 0.0 (Circle 5.0) 1.0)), */
+/*     Rotate3V 1.8849555921538759 (0.0,0.0,1.0) (Translate3 (11.666666666666666,0.0,-1.0) (ExtrudeR 0.0 (Circle 5.0) 1.0)), */
+/*     Rotate3V 2.5132741228718345 (0.0,0.0,1.0) (Translate3 (23.333333333333332,0.0,-1.0) (ExtrudeR 0.0 (Circle 5.0) 1.0)), */
+/*     Rotate3V 3.141592653589793  (0.0,0.0,1.0) (Translate3 (11.666666666666666,0.0,-1.0) (ExtrudeR 0.0 (Circle 5.0) 1.0)), */
+/*     Rotate3V 3.7699111843077517 (0.0,0.0,1.0) (Translate3 (23.333333333333332,0.0,-1.0) (ExtrudeR 0.0 (Circle 5.0) 1.0)), */
+/*     Rotate3V 4.39822971502571   (0.0,0.0,1.0) (Translate3 (11.666666666666666,0.0,-1.0) (ExtrudeR 0.0 (Circle 5.0) 1.0)), */
+/*     Rotate3V 5.026548245743669  (0.0,0.0,1.0) (Translate3 (23.333333333333332,0.0,-1.0) (ExtrudeR 0.0 (Circle 5.0) 1.0)), */
+/*     Rotate3V 5.654866776461628  (0.0,0.0,1.0) (Translate3 (11.666666666666666,0.0,-1.0) (ExtrudeR 0.0 (Circle 5.0) 1.0)), */
+/*     Rotate3V 6.283185307179586  (0.0,0.0,1.0) (Translate3 (23.333333333333332,0.0,-1.0) (ExtrudeR 0.0 (Circle 5.0) 1.0)), */
+/*     Rotate3V 6.911503837897546  (0.0,0.0,1.0) (Translate3 (11.666666666666666,0.0,-1.0) (ExtrudeR 0.0 (Circle 5.0) 1.0)) */
+/*   ], */
+/*   Shell3 2.0 (ExtrudeR 0.0 (Circle 5.0) 1.0) */
+/* ] */
