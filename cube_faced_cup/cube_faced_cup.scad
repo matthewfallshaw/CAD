@@ -1,3 +1,12 @@
+// A Customisable Cup/Container
+
+include <BOSL/constants.scad>
+use <BOSL/transforms.scad>
+use <BOSL/shapes.scad>
+
+lh=0.2;
+lw=0.45;
+
 // Base cube dimension
 cell_cube=8;  // [1:50]
 // How much should the cube be flattened? 1 = no flattening.
@@ -7,31 +16,23 @@ ring_rad=40;  // [5:200]
 // Approximate height of the cylinder. Complete rows will change the actual height.
 height=60;  // [10:300]
 // Floor thickness. Best to pick a multiple of your layer thickness.
-base_thickness=1.225;  // [0.175:0.175:3.5]
+base_thickness=1.2;  // [0.1:0.1:3.5]
 // Wall thickness. Best to pick a multiple of your line width.
-thickness=0.7;  // [0.35:0.35:3.5]
+thickness=0.7;  // [0.4:0.4:3.6]
 // Base fillet. Avoid hard to clean sharp corners.
 base_fillet_rad=4;  // [0:10]
 // Rim radius.
 rim_radius=1.5;  // [0:10]
 
 rh=sqrt(1/2);
-ring_height=rh*rh*cell_cube+rh*cell_cube;
+ring_height=rh*rh*cell_cube+rh*cell_cube+0.2;
 cut_buffer=2*ring_height;
 adjusted_height=floor(height/ring_height)*ring_height;
 base_lift=cell_cube*rh*rh;
 
 // Detail level.
-$fn=128;  // [3:1:128]
+$fn=64;  // [3:1:128]
 
-*translate([0,0,adjusted_height]) cube([1000,1000,0.01],center=true);
-
-*sub_cell();
-*cell();
-*ring();
-*wall();
-*base_radius();
-*base_radius(clear_outside=true);
 basket();
 
 module wall() {
@@ -62,26 +63,14 @@ module sub_cell(cell_cube=cell_cube) {
         cube(cell_cube);
 }
 
-module base_radius(fillet_rad=base_fillet_rad,wall_rad=ring_rad,clear_outside=false) {
-  rotate_extrude() translate([-wall_rad,0]) difference() {
-    square(fillet_rad*(clear_outside?2:1),center=clear_outside);
-    translate([fillet_rad,fillet_rad]) circle(fillet_rad);
-  }
-}
-
 module basket() {
   difference() {
     union() {
-      difference() {
-        union() {
-          cylinder(h=height-base_thickness,r=ring_rad);
-          translate([0,0,base_lift]) wall();
-          translate([0,0,height-rim_radius]) rotate_extrude() translate([ring_rad,0]) circle(rim_radius);
-        }
-        translate([0,0,base_thickness]) cylinder(h=height+cut_buffer,r=ring_rad-thickness);
-      }
-      translate([0,0,base_thickness]) base_radius(wall_rad=ring_rad-thickness);
+      cyl(h=height-rim_radius,r=ring_rad,fillet1=base_fillet_rad,align=V_TOP);
+      translate([0,0,base_lift]) wall();
+      translate([0,0,height-rim_radius]) rotate_extrude() translate([ring_rad,0]) circle(rim_radius);
     }
-    base_radius(fillet_rad=base_fillet_rad+base_thickness,wall_rad=ring_rad,clear_outside=true);
+    translate([0,0,base_thickness])
+      cyl(h=height,r=ring_rad-thickness,fillet1=base_fillet_rad-thickness,align=V_TOP);
   }
 }
