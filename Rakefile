@@ -23,7 +23,9 @@ end
 
 
 task default: :build
-task :build => :"3mf"
+task :build => :stl
+
+task :all => [:stl, :"3mf"]
 
 
 desc 'Build 3mf files from scad files'
