@@ -1,7 +1,8 @@
 # build artifacts, caches, backup files
-_util/renderer.png
-.ccls-cache/
+/_util/renderer.png
+/.ccls-cache/
 *.FCStd[1234]
+/impl/build.*
 
 # retired, other people's stuff
 _archive/
@@ -15,7 +16,10 @@ _firmware/
 
 # other repos
 profiles/
-cat_door/
+/cat_door/
+
+# scratch
+scratch.*
 
 # MacOS
 .DS_Store
