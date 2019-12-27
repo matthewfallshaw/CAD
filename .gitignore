@@ -1,6 +1,4 @@
 # build artifacts, caches, backup files
-*.stl
-*.3mf
 _util/renderer.png
 .ccls-cache/
 *.FCStd[1234]
