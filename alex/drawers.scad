@@ -4,15 +4,15 @@ use <BOSL/shapes.scad>
 // use <BOSL/masks.scad>
 // use <BOSL/math.scad>
 
-lw=0.40;  // line width
+lw=0.50;  // line width
 lh=0.3;   // layer height
 
-w=230;    // width
+w=245;    // width
 h=160;    // height
-d=209.9;  // depth
+d=205;    // depth
 
 n=5;         // number of drawers
-wall=4*lw;   // wall thickness
+wall=2*lw;   // wall thickness
 
 // Prototype size
 // w=50;              // width
@@ -29,18 +29,23 @@ cl=0.3;      // sliding clearance
 track_h=7;  // drawer track height (to centre)
 track_w=3;   // drawer track width (off wall)
 track_pin_dia=5;  // drawer track sliding pin diameter
-track_offset=15;  // track offset (inset from front)
+track_offset=2*wall+cl;  // track offset (inset from front)
 
 dw=dcw-2*cl;  // drawer width
 dd=dcd-cl;    // drawer depth
 dh=dch-2*cl;  // drawer height
 
+hw=min(dw/2,50);  // drawer handle width
+hd=15+wall;       // drawer handle depth
+hh=min(dh/2,15);  // drawer handle height
+
+
 echo(lw=lw, lh=lh, w=w, h=h, d=d, n=n, wall=wall, cl=cl, dcw=dcw, dcd=dcd, dch=dch,
      dw=dw, dd=dd, dh=dh);
 
-right_half(x=wall+cl,s=2*w) assy();
+// assy();
 // print();
-// drawers();
+zmove(d) xrot(-90) drawers();
 // drawer();
 // right_track();
 
@@ -67,6 +72,12 @@ module drawers() {
       zmove((dch+wall)*i) {
         xmove(dcw/2)  right_track();
         xmove(-dcw/2) left_track();
+        xspread(l=dcw/2, n=3) support_rib();
+        offset=track_offset+wall*cos(45)+3*track_w+track_w+2;
+        translate([0,offset,dch]) zrot(90) {
+          cuboid([wall,w,up(wall*3)], align=V_RIGHT);
+          xmove(wall) zflip() right_triangle([up(wall*3),w,up(wall*3)], align=V_RIGHT);
+        }
       }
     }
   }
@@ -74,35 +85,41 @@ module drawers() {
 
 module right_track() {
   slide_dia=track_pin_dia+2*cl;
+  track_offset_inner=track_offset+wall*cos(45);
+  track_w_clear=track_w+2;
 
   zmove(track_h) difference() {
     // track
-    hull() {
-      ymove(dd)
-        cuboid([track_w,1,slide_dia+2*wall], align=V_LEFT+V_BACK);
-      ymove(track_offset)
-        prismoid(h=slide_dia+2*wall, size1=[track_w,0], size2=[track_w,slide_dia+2*wall],
-                 shift=[0,-(slide_dia+2*wall)/2], align=V_LEFT);
-    }
+    ymove(track_offset)
+      cuboid([track_w,dd+wall-track_offset,slide_dia+2*wall], align=V_LEFT+V_BACK);
     // slot
     hull() {
-      translate([1,dd+1])
-        cuboid([track_w+2,1,slide_dia], align=V_LEFT+V_FRONT);
-      translate([1,track_offset+wall*cos(45)])
-        prismoid(h=slide_dia, size1=[track_w+2,0], size2=[track_w+1,slide_dia],
-                 shift=[0,-slide_dia/2], align=V_LEFT);
+      translate([1,dd+wall+1])
+        cuboid([track_w_clear,1,slide_dia], align=V_LEFT+V_FRONT);
+      translate([1,track_offset_inner])
+        yflip() right_triangle([track_w_clear,track_w_clear,slide_dia],
+                               align=V_LEFT+V_FRONT, orient=ORIENT_Z);
     }
     // pin entry
-    translate([1,track_offset+wall*cos(45),wall])
-      prismoid(h=slide_dia+2*wall, size1=[track_w+2,0], size2=[track_w+2,slide_dia+2*wall],
-               shift=[0,-(slide_dia+2*wall)/2], align=V_LEFT);
-    translate([1,track_offset+wall*cos(45)-1])
-      cuboid([track_w+2,track_w/cos(45)+track_pin_dia/2+1,slide_dia/2+2*wall], align=V_TOP+V_LEFT+V_BACK);
+    hull() {
+      translate([1,track_offset_inner,2*wall])
+        yflip() right_triangle([track_w_clear,track_w_clear,slide_dia],
+                               align=V_LEFT+V_FRONT, orient=ORIENT_Z);
+      translate([1,track_offset_inner+3*track_w,2*wall])
+        yflip() right_triangle([track_w_clear,track_w_clear,slide_dia],
+                               align=V_LEFT+V_FRONT, orient=ORIENT_Z);
+    }
   }
 }
 
 module left_track() {
   xflip() right_track();
+}
+
+module support_rib() {
+  offset=track_offset+wall*cos(45)+3*track_w+track_w+2;
+
+  translate([0,offset,dch]) cuboid([wall,dd-offset+wall,up(wall*3)], align=V_BACK);
 }
 
 module drawer() {
@@ -118,7 +135,8 @@ module drawer() {
         ymove(-(dd-wall)/2) cuboid([dw,wall,dh]);
         //   face plate supports
         translate([-wall/2,-dd/2+wall,dh/2-(dh-dbh)])
-          xspread(spacing=dbw-wall, n=2) right_triangle([wall,max(dh-dbh,dd/3),dh-dbh], orient=ORIENT_X);
+          xspread(spacing=dbw-wall, n=2) right_triangle([wall,max(dh-dbh,dd/3),dh-dbh],
+                                                        orient=ORIENT_X);
         // track pin
         translate([0,(dd-10)/2,-dh/2+track_h-wall])
           cyl(h=dw, d=track_pin_dia, circum=false, realign=true, orient=ORIENT_X);
@@ -129,13 +147,10 @@ module drawer() {
 
     // Handle
     ymove(-dd/2) difference() {
-      hull() {
-        xspread(spacing=max(dw/8, 20), n=2) union() {
-          translate([0,-dh/6, dh/6]) sphere(d=4);
-          translate([0, dh/6,-dh/6]) sphere(d=4+2);
-        }
-      }
-      translate([0,wall,0]) cuboid([dw+1,dd+1,dh+2],align=V_BACK);
+      cuboid([hw,hd,hh], chamfer=2, edges=EDGES_Y_BOT+EDGES_Z_FR+EDGE_BOT_FR, align=V_FRONT);
+      translate([0,0,wall]) cuboid([hw-2*wall,hd-wall,hh],
+                                   chamfer=2-wall*cos(45),
+                                   edges=EDGES_Y_BOT+EDGES_Z_FR+EDGE_BOT_FR, align=V_FRONT);
     }
   }
 }

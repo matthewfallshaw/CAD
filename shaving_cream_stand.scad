@@ -1,11 +1,11 @@
-use <MCAD/2Dshapes.scad>
-use <MCAD/regular_shapes.scad>
-use <MCAD/array.scad>
+include <BOSL/constants.scad>
+use <BOSL/transforms.scad>
+use <BOSL/shapes.scad>
 
-int_dia=70;
+int_dia=78;
 wall=2;
-height=5;
-feet=5;
+total_height=3;
+feet=0;
 feet_dia=5;
 holes=5;
 
@@ -14,14 +14,12 @@ $fn=100;
 union() {
   // base plate
   difference() {
-    cylinder(max(wall, 3),d=int_dia+wall);
-    Radial_Array(360/holes,holes,int_dia/2/3*2) {
-      translate([0,0,-1]) cylinder(wall*2+1,d=5);
-    }
-    rotate([0,0,360/holes/2]) Radial_Array(360/holes,holes,int_dia/2/3) {
-      translate([0,0,-1]) cylinder(wall*2+1,d=5);
-    }
+    cyl(h=total_height/3, d=int_dia+wall);
+    zrot_copies(n=holes, r=int_dia/2/3*2)               cyl(h=wall+2,d=5);
+    zrot_copies(n=holes, r=int_dia/2/3, sa=360/holes/2) cyl(h=wall+2,d=5);
   }
   // outer wall
-  cylinder_tube(height,(int_dia+wall)/2,wall);
+  zmove(-total_height/3/2) tube(h=total_height*2/3, od=int_dia+wall, wall=wall, align=V_TOP);
+  // feet
+  if(feet>0) bottom_half() zmove(feet_dia/2-total_height*2/3) zrot_copies(n=feet, r=int_dia/2-feet_dia/2) sphere(d=feet_dia);
 }
