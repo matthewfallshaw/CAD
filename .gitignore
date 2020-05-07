@@ -4,20 +4,6 @@
 *.FCStd[1234]
 /impl/build.*
 
-# retired, other people's stuff
-_archive/
-_retired/
-_otherpeople/
-_mp select mini/
-
-# printer vendors
-_vendor/
-_firmware/
-
-# other repos
-profiles/
-/cat_door/
-
 # scratch
 scratch.*
 

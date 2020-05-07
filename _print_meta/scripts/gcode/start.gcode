@@ -52,9 +52,9 @@ M900 K0; Disable Linear Advance for prime line
 G92 E0.0 ; reset extrusion distance
 G1 Y-3.0 F1000.0 ; go outside print area
 G1 E2 F1000 ; de-retract and push ooze
-G1 X20.0 E6  F1000.0 ; fat 20mm intro line @ 0.30
+G1 X20.0 E7  F1000.0 ; fat 20mm intro line @ 0.30
 G1 X60.0 E3.2  F1000.0 ; thin +40mm intro line @ 0.08
-G1 X100.0 E6  F1000.0 ; fat +40mm intro line @ 0.15
+G1 X100.0 E8  F1000.0 ; fat +40mm intro line @ 0.15
 G1 E-0.8 F3000; retract to avoid stringing
 G1 X99.5 E0 F1000.0 ; -0.5mm wipe action to avoid string
 G1 X110.0 E0 F1000.0 ; +10mm intro line @ 0.00
