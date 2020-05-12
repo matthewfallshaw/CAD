@@ -4,10 +4,14 @@ $fn=64;
 
 lh=0.3;   // line height
 lw=0.45;  // line width
+// lw=1.2;  // line width
 
-w=62;      // box width
-d=40;      // box depth
-h=36;      // box depth
+// w=62;      // box width
+// d=40;      // box depth
+// h=36;      // box depth
+w=110;      // box width
+d=82;      // box depth
+h=80;      // box depth
 th=lw*2;   // wall thickness
 box_ch=3;  // box chamfer
 
@@ -17,11 +21,14 @@ tab_offset=4;  // snap tab offset
 
 cl=0.2;  // clearance
 
-spiral_vase_mode=true;  // spiral vase mode
+// spiral_vase_mode=true;  // spiral vase mode
+spiral_vase_mode=false;  // spiral vase mode
 
-front_half() box_assembly(spiral_vase_mode);
+// back_half() box_assembly(spiral_vase_mode);
+up(lid_h) color("blue") back_half() box_assembly(spiral_vase_mode);
 // ydistribute(spacing=d+5) {
-  // box(spiral_vase_mode);
+  back_half()
+  box(spiral_vase_mode);
   // lid(spiral_vase_mode);
 // }
 
@@ -34,21 +41,40 @@ module box_assembly(spiral_vase_mode) {
 
 module box(spiral_vase_mode) {
   wall=(spiral_vase_mode?lw:th);
-  cc=internal_chamfer(box_ch,(wall)+cl);
-  bottom_half(s=w*2,z=h-(wall)-cl)
+  bottom_half(s=max(w,d)*2,z=h-(wall)-cl)
     union() {
       difference() {
-        cuboid([w,d,h-wall-cl],chamfer=cc,edges=EDGES_ALL,anchor=BOTTOM);
+        box_shape(w,d,h-wall-cl,box_ch,2*lw,false);
 
         if(!spiral_vase_mode)
           up(th)
-            cuboid([w-2*th,d-2*th,h],
-                   chamfer=internal_chamfer(cc,th),edges=edges(EDGES_ALL,except=TOP),
-                   anchor=BOTTOM);
+            box_shape(w-2*th-2*cl,d-2*th-2*cl,h-wall,box_ch,2*lw,true);
       }
       for(i=zip([w/2,d/2,w/2,d/2],[for(i=[0:90:270]) i]))
         up(h-(lid_h-tab_offset)) rotate(i[1]) translate([i[0],0]) yrot(90)
           prismoid(size1=[2,tab_l-cl], size2=[0,tab_l-cl], h=1.5, anchor=BOTTOM);
+  }
+
+  module box_shape(w,d,h,ch,stack_w,internal) {
+    th_ch=internal?internal_chamfer(ch,th):ch;
+    stack_w_ch=internal?stack_w/cos(45):stack_w;
+    union() {
+      hull() {
+        cuboid([w-2*th_ch-2*stack_w,d-2*th_ch-2*stack_w,0.001]);
+        up(th_ch) cuboid([w-2*stack_w,d-2*stack_w,0.001],chamfer=th_ch,edges="Z");
+        up(h-lid_h+wall-stack_w_ch+0.01) cuboid([w-2*stack_w,d-2*stack_w,0.001],chamfer=th_ch,edges="Z");
+      }
+      hull() {
+        up(h-lid_h+wall-stack_w_ch)
+          cuboid([w-2*stack_w,d-2*stack_w,0.001],chamfer=th_ch,edges="Z");
+        up(h-lid_h+wall-stack_w_ch+stack_w)
+          cuboid([w,d,0.001],chamfer=ch,edges="Z");
+        up(h-internal_chamfer(box_ch,th+cl))
+          cuboid([w,d,0.1],chamfer=ch,edges="Z");
+        up(h-internal_chamfer(box_ch,th+cl)+th*cos(45))
+          cuboid([w-2*th*cos(45),d-2*th*cos(45),0.1],chamfer=ch,edges="Z");
+      }
+    }
   }
 }
 
