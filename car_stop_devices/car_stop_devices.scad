@@ -9,9 +9,9 @@ names=["L","M"];
 
 // name=names[1];
 // name="tab";
-// name="pin";
+name="pin";
 // name="icosa";
-name="icosa_top";
+// name="icosa_top";
 // name="icosa_bottom";
 // name="aligned";
 
@@ -28,7 +28,7 @@ name="icosa_top";
 if(!is_undef(name) && name=="tab") {
   tab();
 } else if(!is_undef(name) && name=="pin") {
-  snap_pin("standard",d=10,l=15,snap=0.7,pointed=false);
+  snap_pin("standard",d=10,l=15,snap=0.8,pointed=false);
 } else if(!is_undef(name) && ends_with(name,"_top")) {
 } else if(!is_undef(name) && is_string(name)) {
   weight(name);

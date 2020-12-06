@@ -2,16 +2,13 @@ include <stdlib.scad>
 
 $fn=64;
 
-lh=0.3;   // line height
+lh=0.2;   // line height
 lw=0.45;  // line width
-// lw=1.2;  // line width
+// lw=1.2;   // line width
 
-// w=62;      // box width
-// d=40;      // box depth
-// h=36;      // box depth
-w=110;      // box width
-d=82;      // box depth
-h=80;      // box depth
+w=65;      // box width
+d=40;      // box depth
+h=35;      // box depth
 th=lw*2;   // wall thickness
 box_ch=3;  // box chamfer
 
@@ -19,18 +16,24 @@ lid_h=10;      // lid height
 tab_l=20;      // snap tab length
 tab_offset=4;  // snap tab offset
 
+stack_angle=0; // box stacking angle
+// stack_angle=6; // box stacking angle
+
 cl=0.2;  // clearance
 
-// spiral_vase_mode=true;  // spiral vase mode
-spiral_vase_mode=false;  // spiral vase mode
+spiral_vase_mode=true;  // spiral vase mode
+// spiral_vase_mode=false;  // spiral vase mode
 
-// back_half() box_assembly(spiral_vase_mode);
-up(lid_h) color("blue") back_half() box_assembly(spiral_vase_mode);
-// ydistribute(spacing=d+5) {
-  back_half()
+MODE="assy";
+
+if(MODE=="build") ydistribute(spacing=d+5) {
   box(spiral_vase_mode);
-  // lid(spiral_vase_mode);
-// }
+  lid(spiral_vase_mode);
+}
+else if(MODE=="box_65x40x35") box(spiral_vase_mode,w=65,d=40,h=35);
+else if(MODE=="lid_65x40x35") lid(spiral_vase_mode,w=65,d=40,h=35);
+else box_assembly(spiral_vase_mode);
+// up(14) color("blue") back_half() box_assembly(spiral_vase_mode);
 
 module box_assembly(spiral_vase_mode) {
   union() {
@@ -39,7 +42,7 @@ module box_assembly(spiral_vase_mode) {
   }
 }
 
-module box(spiral_vase_mode) {
+module box(spiral_vase_mode,w=w,d=d,h=h) {
   wall=(spiral_vase_mode?lw:th);
   bottom_half(s=max(w,d)*2,z=h-(wall)-cl)
     union() {
@@ -58,10 +61,10 @@ module box(spiral_vase_mode) {
   module box_shape(w,d,h,ch,stack_w,internal) {
     th_ch=internal?internal_chamfer(ch,th):ch;
     stack_w_ch=internal?stack_w/cos(45):stack_w;
-    union() {
+    let(shr=2*(h-lid_h)*tan(stack_angle)) union() {
       hull() {
-        cuboid([w-2*th_ch-2*stack_w,d-2*th_ch-2*stack_w,0.001]);
-        up(th_ch) cuboid([w-2*stack_w,d-2*stack_w,0.001],chamfer=th_ch,edges="Z");
+        cuboid([w-2*th_ch-2*stack_w-shr,d-2*th_ch-2*stack_w-shr,0.001]);
+        up(th_ch) cuboid([w-2*stack_w-shr,d-2*stack_w-shr,0.001],chamfer=th_ch,edges="Z");
         up(h-lid_h+wall-stack_w_ch+0.01) cuboid([w-2*stack_w,d-2*stack_w,0.001],chamfer=th_ch,edges="Z");
       }
       hull() {
@@ -78,7 +81,7 @@ module box(spiral_vase_mode) {
   }
 }
 
-module lid(spiral_vase_mode) {
+module lid(spiral_vase_mode,w=w,d=d,h=h) {
   wall=(spiral_vase_mode?lw:th);
   union() {
     difference() {
