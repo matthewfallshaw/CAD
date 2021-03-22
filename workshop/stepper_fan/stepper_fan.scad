@@ -17,13 +17,14 @@ BIGNUM=1000;
 
 wall=3;
 
-pitch=1.85;
+pitch=4;
 // [teeth,pr]
 gears=[ let(t=100) [t,pitch_radius(pitch=pitch,teeth=t),outer_radius(pitch=pitch,teeth=t)]
-      , let(t=20)  [t,pitch_radius(pitch=pitch,teeth=t),outer_radius(pitch=pitch,teeth=t)]
+      , let(t=10)  [t,pitch_radius(pitch=pitch,teeth=t),outer_radius(pitch=pitch,teeth=t)]
 ];
 th=7;
-shaft_dia=5;
+shaft_dia=7.85;
+cutout=3;
 
 motor_pos=[pitch_radius(pitch=pitch,teeth=get_teeth(gears[1]))+
              pitch_radius(pitch=pitch,teeth=get_teeth(gears[0]))
@@ -40,7 +41,8 @@ cl=4*$slop;
 // MODE="drive_gear";
 // MODE="housing_top";
 // MODE="housing_bottom";
-MODE="assy";
+MODE="_housing";
+// MODE="assy";
 
   // TODO
   DEBUG=true;
@@ -52,6 +54,7 @@ else if(MODE=="5Dm8_adapter") 5Dm8_adapter();
 else if(MODE=="5m8_adapter") 5m8_adapter();
 else if(MODE=="housing_top") yrot(180) housing_top();
 else if(MODE=="housing_bottom") housing_bottom();
+else if(MODE=="_housing") housing();
 else {
   show("assy") assy();
 }
@@ -59,70 +62,62 @@ else {
 // Both the assembly to show how everything fits together, and the positioning for cutouts in the
 // housing body.
 module assy(hide="nil") {
-  // ## fan shaft
-  // GT2 pulley
-  GT2_pulley($tags="assy",GT2_pulley_20T,anchor="gearcenter") {
-    position(CENTER) {
-      cyl($tags="neg",d=GT2_diameter(GT2_pulley_20T)+2*cl,h=GT2_height(GT2_pulley_20T)+2*cl);
-      down(GT2_height(GT2_pulley_20T)/2-3.5) cyl($tags="neg",d=5,l=BIGNUM,orient=LEFT,anchor=BOTTOM);
-    }
-    // M5 bolt
-    position(BOTTOM) up(40-bb_width(BB608))
-      metric_bolt($tags="assy",size=5,headtype="hex",pitch=0,l=40);
-    // m5m8_adapter
-    position(BOTTOM) {
-      m5m8_adapter($tags="assy",anchor=TOP) {
-        // bearing
-        attach(CENTER,CENTER) {
-          cyl($tags="neg",d=bb_diameter(BB608),h=bb_width(BB608)+$slop);
-          n_ball_bearing($tags="assy",BB608);
-        }
+  union() {
+    // ## fan shaft
+    driven_gear($tags="neg",anchor="gearcenter");
+    driven_gear($tags="assy",anchor="gearcenter") {
+      // attach(CENTER,CENTER)
+      //   cyl($tags="neg",r=gears[1][2]+2*$slop,l=2*th+$slop);
+      // bottom earing
+      attach(BOTTOM,TOP) {
+        cyl($tags="neg",d=bb_diameter(BB608),h=bb_width(BB608)+$slop);
+        n_ball_bearing($tags="assy",BB608)
+          // M8 bolt
+          position(BOTTOM) {
+            metric_bolt($tags="assy",size=8,headtype="hex",pitch=0,l=60,orient=DOWN);
+            cyl($tags="neg",d=8,l=BIGNUM);
+          }
+      }
+      // top bearing
+      attach(TOP,BOTTOM) {
+        cyl($tags="neg",d=bb_diameter(BB608),h=bb_width(BB608)+$slop);
+        n_ball_bearing($tags="assy",BB608);
+      }
+      attach(TOP,BOTTOM) {
+        metric_nut($tags="assy",size=5);
       }
     }
-    // m5m8_adapter
-    attach(TOP,BOTTOM)
-      m5m8_adapter($tags="assy") {
-        // bearing
-        attach(CENTER,CENTER) {
-          cyl($tags="neg",d=bb_diameter(BB608),h=bb_width(BB608)+$slop);
-          n_ball_bearing($tags="assy",BB608)
-            position(BOTTOM)
-              cyl($tags="neg",d=bearing_id2,h=BIGNUM,anchor=TOP);
-        }
-        attach(TOP,BOTTOM) {
-          metric_nut($tags="assy",size=5);
-        }
-      }
-  }
 
-  // ## drive shaft
-  // drive gear
-  right(motor_pos.x) {
-    cyl($tags="neg",d=2*get_or(gears[0])+8*$slop,l=th+4*$slop);
-    drive_gear($tags="assy",anchor="gearcenter") {
-      position(BOTTOM) down(12-7-2) {
-        // stepper motor
-        union() {
-          up(0.1) cyl($tags="neg",d=nema_motor_plinth_diam(size=17)+2*cl,l=nema_motor_plinth_height(size=17)+2*cl,anchor=TOP);
-          down(nema_motor_plinth_height(size=17)+0.1) let(w=nema_motor_width(size=17)+$slop) cuboid($tags="neg",[w,w,BIGNUM],anchor=TOP);
+    // ## drive shaft
+    // drive gear
+    right(motor_pos.x) {
+      // cyl($tags="neg",d=2*get_or(gears[0])+8*$slop,l=th+4*$slop);
+      drive_gear($tags="neg",anchor="gearcenter");
+      drive_gear($tags="assy",anchor="gearcenter") {
+        position(BOTTOM) down(12-7-2) {
+          // stepper motor
+          union() {
+            up(0.1) cyl($tags="neg",d=nema_motor_plinth_diam(size=17)+2*cl,l=nema_motor_plinth_height(size=17)+2*cl,anchor=TOP);
+            down(nema_motor_plinth_height(size=17)+0.1) let(w=nema_motor_width(size=17)+$slop) cuboid($tags="neg",[w,w,BIGNUM],anchor=TOP);
+          }
+          down(0.2) nema17_stepper($tags="assy",anchor="shaft-bottom")
+            // motor mounting CSK bolts
+            for(a=[1:4]) position(str("screw",a)) up(3.8) metric_bolt($tags="neg",size=3,l=5,headtype="countersunk",pitch=0);
         }
-        down(0.2) nema17_stepper($tags="assy",anchor="shaft-bottom")
-          // motor mounting CSK bolts
-          for(a=[1:4]) position(str("screw",a)) up(3.8) metric_bolt($tags="neg",size=3,l=5,headtype="countersunk",pitch=0);
+        // bearing
+        position(TOP) {
+          cyl($tags="neg",d=bb_diameter(BB608)+$slop,h=bb_width(BB608)+$slop,anchor=BOTTOM);
+          cyl($tags="neg",d=bearing_id2,h=bb_width(BB608));
+          n_ball_bearing($tags="assy",BB608,anchor=BOTTOM)
+            position(TOP)
+              cyl($tags="neg",d=bearing_id2,h=BIGNUM,anchor=BOTTOM);
+          5Dm8_adapter(anchor=BOTTOM);
+        }
       }
-      // bearing
-      position(TOP) {
-        cyl($tags="neg",d=bb_diameter(BB608)+$slop,h=bb_width(BB608)+$slop,anchor=BOTTOM);
-        cyl($tags="neg",d=bearing_id2,h=bb_width(BB608));
-        n_ball_bearing($tags="assy",BB608,anchor=BOTTOM)
-          position(TOP)
-            cyl($tags="neg",d=bearing_id2,h=BIGNUM,anchor=BOTTOM);
-        5Dm8_adapter(anchor=BOTTOM);
-      }
+      cyl($tags="neg",d=6,l=BIGNUM);
     }
-    cyl($tags="neg",d=6,l=BIGNUM);
+    if(hide!="assy") housing($tags="assy");
   }
-  if(hide!="assy") housing($tags="assy");
 }
 
 module housing_top() {
@@ -134,16 +129,17 @@ module housing_bottom() {
 }
 
 module housing() {
-  int_h=(GT2_pulley_20T[2][1]+GT2_pulley_20T[3][1])+bearing_h+$slop;
-  s=[wall+bb_diameter(BB608)/2+get_pr(gears[1])+get_pr(gears[0])+get_or(gears[0])+wall+2,56,int_h+12];
-  ctr=[-bb_diameter(BB608)/2-8,0,0];
+  int_h=2*bearing_h+2*th+$slop;
+  left=wall+bb_diameter(BB608)/2;
+  right=get_pr(gears[1])+get_pr(gears[0])+get_or(gears[0])-cutout;
+  s=[left+right,2*get_or(gears[0])-2*cutout,int_h];
 
   diff(neg="neg",pos="pos",keep="keep") {
-    move(ctr) cuboid($tags="pos",s-(DEBUG?[0,s.y/2,0]:[0,0,0]),anchor=LEFT+(DEBUG?FRONT:[0,0,0]));
+    translate([-left,0,int_h/2-bearing_h-th/2]) cuboid($tags="pos",s-(DEBUG?[0,s.y/2,0]:[0,0,0]),anchor=LEFT+(DEBUG?FRONT:[0,0,0]));
 
     assy(hide="assy");
     // closure bolts
-    move(ctr+[s.x/2,0,0]) for(x=[-1,1],y=[-1,1]) move([x*(s.x/2-5),y*(s.y/2-5),0]) {
+    move([-left+s.x/2,0,0]) for(x=[-1,1],y=[-1,1]) move([x*(s.x/2-5),y*(s.y/2-5),0]) {
       // bolts
       cyl($tags="neg",d=3.2,l=BIGNUM);
       // heads
@@ -154,24 +150,45 @@ module housing() {
 }
 
 module drive_gear(anchor=CENTER,spin=0,orient=UP) {
-  d=gears[0][2];
-  boss=GT2_heights(GT2_pulley_20T)[2];
-  l=th+boss;
+  _gear(type=gears[0],D=true,anchor=anchor,spin=spin,orient=orient) children();
+}
+
+module driven_gear(anchor=CENTER,spin=0,orient=UP) {
+  _gear(type=gears[1],D=false,boss=th,worm=true,anchor=anchor,spin=spin,orient=orient) children();
+}
+
+module _gear(type,D,boss,worm,anchor=CENTER,spin=0,orient=UP) {
+  assert(type);
+  assert(!is_undef(D));
+  assert($tags);
+
+  clearance_pad=($tags=="neg"?2*cl:0);
+  d=2*get_or(type)+clearance_pad;
+  boss=(is_undef(boss)?GT2_heights(GT2_pulley_20T)[2]:boss);
+  l=th+boss+clearance_pad;
 
   attachable(d=d,l=l,anchor=anchor,spin=spin,orient=orient
             ,anchors=[anchorpt("gearcenter",[0,0,-th/2])],cp=[0,0,-th/2+boss/2]) {
-    render()
-    difference() {
-      union() {
-        gear(pitch=pitch,teeth=get_teeth(gears[0]),thickness=th-$slop,shaft_diam=0,anchor=TOP);
-        down($slop+0.01) cyl(d=15,l=boss+$slop+0.01,anchor=BOTTOM);
-      }
-
+    if($tags!="neg") {
+      render()
       difference() {
-        cyl(d=5+2*$slop,l=BIGNUM);
+        union() {
+          gear(pitch=pitch,teeth=get_teeth(type),thickness=th-$slop,shaft_diam=0,anchor=TOP);
+          down($slop+0.01) cyl(d=15,l=boss+$slop+0.01,anchor=BOTTOM);
+        }
 
-        right(2-$slop/2) cuboid([BIGNUM,BIGNUM,BIGNUM],anchor=LEFT);
+        difference() {
+          cyl(d=5+2*$slop,l=BIGNUM);
+
+          if(D) right(2-$slop/2) cuboid([BIGNUM,BIGNUM,BIGNUM],anchor=LEFT);
+        }
+        if(worm) up(th/2) {
+          cyl(d=2.8,l=BIGNUM,anchor=TOP,orient=RIGHT);
+        }
       }
+    } else {
+      up(boss) cyl($tags="neg",d=d,l=l,anchor=TOP);
+      if(worm) translate([-d/2+$slop,0,th/2]) cyl($tags="neg",d=4,l=BIGNUM,anchor=TOP,orient=RIGHT);
     }
     children();
   }
