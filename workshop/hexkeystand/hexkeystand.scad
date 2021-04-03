@@ -161,6 +161,24 @@ keysets=[
     , [ "6.0", 6.3, 6.3]
     ]
   ],
+  [ "Glass bits1",
+    [ [ "3",   2.3,  3.0]
+    , [ "4",   3.4,  4.0]
+    , [ "5",   4.4,  5.0]
+    , [ "6.3", 5.5,  6.3]
+    , [ "7",   6.4,  7.0]
+    , [ "8.5", 5.5,  8.5]
+    , [ "9.3", 6.5,  9.3]
+    , [ "10",  6.5, 10.0]
+    ]
+  ],
+  [ "Glass bits2",
+    [ [ "12.5",6.5, 12.5]
+    , [ "14",  6.6, 14.0]
+    , [ "16",  7.1, 16.0]
+    , [ "18",  8.5, 18.0]
+    ]
+  ],
 ];
 
 /* [Dimensions] */
@@ -169,7 +187,7 @@ stand_wall=1.5;
 // internal hex clearance
 clearance=0.1;
 // distance between keys
-gap=0;
+gap=0.5;
 // same side min distance before flipping label to other side
 min_flip=3;
 // font size
@@ -180,10 +198,12 @@ $fn=100;
 
 /* [Basic] */
 block=false;  // true for block with inset holes; false for hex stands
-MODE="Phillips odds";  // ["Allen drill keys", "Allen Sockets Small", "Allen Sockets Large", "Countersink bits", "Allen keys"]
+// MODE="Glass bits1";  // ["Allen drill keys", "Allen Sockets Small", "Allen Sockets Large", "Countersink bits", "Allen keys"]
+MODE="Glass bits2";
 
      if(MODE=="Allen drill ball keys") ;
 else if(MODE=="Phillips odds") ;
+else if(MODE=="Glass bits") ;
 
 keyset=MODE;
 keys=struct_val(keysets,keyset);

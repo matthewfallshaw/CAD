@@ -6,6 +6,20 @@ $fn=0;
 $fa=8;
 $fs=3;
 // $fn=64;
+
+// MODE="right5";
+// MODE="left5";
+// MODE="support5";
+// MODE="right3";
+// MODE="left3";
+// MODE="support3";
+// MODE="_ipad_mini5";
+// MODE="_ipad_mini3";
+// MODE="_blank5";
+// MODE="_blank3";
+MODE="assy";
+
+
 BIGNUM=300;
 
 JOINT_CORNER=3;
@@ -28,6 +42,10 @@ CAM_DIA=0;
 CAM_PAD=1;
 ipad_details=[[10.6,9.5],[3.93,11.2]];  // close enough to same for all models
 
+insert_l=4.2;     // heat press insert length
+insert_d=3.7;     // heat press insert hole dia  (interference fit)
+insert_bolt_d=3;   // insert screw dia
+
 // iPad 5th gen edge profile from Accessory Design Guidelines
 // 7.04,6.13
 // 5.91,6.13
@@ -49,21 +67,12 @@ cham=0.5;
 
 cl=0.3;
 
-// MODE="right5";
-// MODE="left5";
-// MODE="right3";
-// MODE="left3";
-// MODE="_ipad_mini5";
-// MODE="_ipad_mini3";
-// MODE="_blank5";
-// MODE="_blank3";
-MODE="assy";
-
-
 if(     MODE=="right5")      render() arm_right(model=5);
 else if(MODE=="left5")       render() arm_left(model=5);
+else if(MODE=="support5")    render() back_support_bar(model=5);
 else if(MODE=="right3")      render() arm_right(model=3);
 else if(MODE=="left3")       render() arm_left(model=3);
+else if(MODE=="support3")    render() back_support_bar(model=3);
 else if(MODE=="_ipad_mini5") ipad(model=5);
 else if(MODE=="_ipad_mini3") ipad(model=3);
 else if(MODE=="_blank5")     blank(model=5,padding=$slop,clearances=true);
@@ -72,6 +81,8 @@ else {
   model=3;
   right(ipad_dims[model].x/2) render() arm_right(model=model);
   left( ipad_dims[model].x/2) render() arm_left( model=model);
+  arm_positions(model=model)  render() back_support_bar(model=model);
+
   ipad_position(model=model) ipad(model=model);
   desk();
 }
@@ -112,19 +123,10 @@ module arm(model,side) {
                       ,bottom=os_chamfer(cut=cham)
                       ,top=os_chamfer(cut=cham)
                       );
-      // back supports
-      let(overlap=10) arm_positions(model=model) union() {
-        #cuboid([ipad_dims[model].x/2+(side=="right"?1:-1)*overlap/2-$slop
-               ,arm_th
-               ,arm_th/2]
-              ,rounding=1,anchor=TOP+RIGHT);
-        if(side=="left") left(ipad_dims[model].x/2-overlap/2) down(arm_th/2) let(eth=(arm_th-ipad_dims[model].z)/2) {
-          cuboid([2*overlap,arm_th,eth],rounding=1,anchor=TOP);
-          cuboid([overlap,arm_th,2*eth],rounding=1,anchor=LEFT);
-          translate([overlap,0,0.5]) yrot(45)
-            cuboid([2*eth*cos(45),arm_th,2*eth*cos(45)+2],rounding=1);
-        }
-      }
+      // back support mounts
+      arm_positions(model=model) right(inside_wall-arm_width/2)
+        let(insert_back=0.4,l=insert_l+insert_back,ch=2)
+          cyl(d=4+2*ch+4*c_lw,l=l,chamfer=ch,anchor=TOP);
       // cable clips
       for(i=[20:20:110]) clip_at_arm_distance_from_end(i);
     }
@@ -135,12 +137,9 @@ module arm(model,side) {
     // desk corner cutouts
     cuboid([BIGNUM,BIGNUM,desk.z],chamfer=0.4,anchor=FRONT+TOP);
     // back screw holes
-    left(ipad_dims[model].x/2) arm_positions(model=model) down(arm_th/2-3.8) {
-      cyl(d=(side=="right"?3.65:3.2),l=2*arm_th,anchor=(side=="right"?TOP:CENTER));
-      if(side=="left") down(arm_th-ipad_dims[model].z+0.45)
-        metric_bolt(size=3,l=2*arm_th,pitch=0,headtype="countersunk"
-                   ,orient=DOWN,anchor="countersunk");
-    }
+    arm_positions(model=model) right(inside_wall-arm_width/2)
+      let(insert_back=0.4)
+        down(insert_back) cyl(d=insert_d,l=2*insert_l,anchor=TOP);
     // underside screw holes
     translate([arm_th/2-arm_width/2,0,-(desk.z+arm_th)]) for(i=[40,55]) back(i) {
       cyl(d=4.5,l=2*arm_th);
@@ -184,9 +183,40 @@ module arm(model,side) {
   }
 }
 
+module back_support_bar(model) {
+  arm_l=ipad_dims[model].x+2*inside_wall;
+  screw_head=((get_metric_bolt_head_size(size=insert_bolt_d)-insert_bolt_d)/2);
+  insert_back=0.4;
+  l=insert_l+insert_back;
+  ch=2;
+  th=l+1+screw_head;
+
+  xflip_copy() right(arm_l/2)
+    difference() {
+      intersection() {
+        cuboid([arm_l/2+1,arm_th,th],chamfer=cham,anchor=TOP+RIGHT);
+        translate([-cham,0,ipad_dims[model].z/2+$slop-arm_th/2]) cuboid([arm_l,arm_th,2*th],chamfer=th,edges=[RIGHT+TOP,RIGHT+BOTTOM],anchor=RIGHT);
+      }
+
+      left(arm_width/2) {
+        // mount clearance
+        cyl(d=4+2*ch+4*c_lw+$slop,l=l,chamfer=ch,anchor=TOP);
+        // screw clearance hole
+        cyl(d=insert_bolt_d+0.2,l=BIGNUM);
+        // countersink
+        down(th+0.01) metric_bolt(size=insert_bolt_d,l=BIGNUM
+                             ,pitch=0,headtype="countersunk",orient=DOWN,anchor="countersunk");
+        // arm clearance
+        up(ipad_dims[model].z/2+$slop)
+          cuboid([arm_width+$slop,arm_th+$slop,arm_th+$slop],chamfer=cham,edges=LEFT+BOTTOM);
+      }
+    }
+}
+
 module arm_positions(model) {
   ipad_position(model=model)
-    for(j=[-1,1]) translate([0,j*ipad_dims[model].y/4,-ipad_dims[model].z/2-1]) children();
+    for(j=[1]) translate([0,j*ipad_dims[model].y/4,-ipad_dims[model].z/2-$slop])
+      children();
 }
 
 module ipad_position(model) {
@@ -228,7 +258,6 @@ module blank(model,padding=$slop,clearances=true) {
   up(s.z/2) union() {
     intersection() {
       let(h=10,sc=1.004) up(max(0,h-s.z)) scale([sc,sc,1])
-        // offset_sweep(p,h=max(s.z,h),bottom=os_smooth(joint=8.5,k=0.5),anchor=TOP);
         offset_sweep(p,h=max(s.z,h),bottom=os_smooth(joint=ipad_dims[model][JOINT_EDGE],k=0.5),anchor=TOP);
       offset_sweep(p,h=s.z,top=os_chamfer(cut=0.4),anchor=TOP);
     }
@@ -250,11 +279,9 @@ module blank(model,padding=$slop,clearances=true) {
     mm=min(width,length);
 
     union() {
-      // extrude_from_to([0,0,0],[0,0,height],scale=1+height/min(width,length)) {
-      //   polygon(p1);
-      // }
-      sectn(0,(height-2*cham)/height,add=0);
-      sectn((height-2*cham)/height,1,add=cham);
+      linear_extrude(cham) polygon(p1);
+      up(cham) sectn(0,(height-2*cham)/height,add=0);
+      up(cham) sectn((height-2*cham)/height,(height-cham)/height,add=cham/2);
     }
 
     function pth(w,l)=let(j=min(w,l)/2-0.01)

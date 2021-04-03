@@ -4,7 +4,7 @@ include <BOSL2/std.scad>
 $fn=64;
 BIGNUM=100;
 
-l=112;
+l=118;
 w=18;
 th=1.6;
 mate_th=1.4;
