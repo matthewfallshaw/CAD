@@ -1,16 +1,21 @@
 include <stdlib.scad>
+include <chamfer_calcs.scad>
 
-lw=0.42;
-lh=0.2;
+$fn=16;
 
-strip_width=15;
-strip_length=quant(150,lw);
-count=5;
+k=1.094;
+b=0.042;
+lw=0.5;
+unit=lw*10/k;
+n=15;
 
-sl=quant(strip_length/2,lw)*2+lw;  // ensure odd # of lines
+w=2*n*unit;
+line=lw-b;
 
-union() {
-  spacing=strip_width+2;
-  xspread(spacing=spacing,n=count) cuboid([strip_width,sl,lh]);
+echo(unit=unit);
 
+difference() {
+  cuboid([w,10,0.2]);
+
+  for(x=[0:n]) right(-w/2+x*2*unit) fwd((x%2==0?lw-b:-lw+b)) cuboid([unit,10,0.4]);
 }

@@ -1,5 +1,0 @@
-- pattern: (app|src)/(.*)\.hs
-  commands:
-  - stack build
-  - stack exec impl-exe
-  - touch ../example.scad

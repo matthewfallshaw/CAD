@@ -2,6 +2,8 @@
 /_util/renderer.png
 /.ccls-cache/
 *.FCStd[1234]
+*.stl
+*.amf
 /impl/build.*
 
 # scratch

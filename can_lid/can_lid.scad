@@ -2,19 +2,20 @@ include <stdlib.scad>
 
 $fn=200;
 
-dia=75;               // diameter including rim
+dia=65.5;               // diameter including rim
 
 wall=1.2;                // wall thickness
-rimh=3.1;                // rim height
-rimd=0.65;               //rim depth
+rimh=2.9;                // rim height
+rimd=0.65;               // rim depth
 lugs=5;                  // # of retaining lugs
 cl=0.2;                  // clearance
 
 r=dia/2+wall+rimd+cl/2;  // overall lid radius
 h=rimh+wall*2;           // overall lid height
 
-MODE="dog";
-// MODE="cat";
+// MODE="dog";
+MODE="cat";
+
 if(MODE=="dog") echo(MODE);
 else if(MODE=="cat") echo(MODE);
 
