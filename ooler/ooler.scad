@@ -23,8 +23,8 @@ $fn=64; // [ 16, 32, 64, 128, 256 ]
 $slop=0.3;
 
 /* [Hidden] */
-// pipe section lengths, from the bottom
-ls=[6,0.5,7.5,1.5,1.5];
+// pipe section lengths, from the top
+ls=[6,0.5,9.5,1.5,1.5];
 // pipe section diameters, from the bottom
 ds=[9,11.5,11,9,11];
 // pipe through hole diameter
@@ -129,7 +129,7 @@ module hose_connector() {
       top_half() down(10.5)
         import("./Garden_hose_Coupler/Hose_quickcon_01.STL");
       cyl(d1=18, d2=9, l=10, anchor=BOTTOM);
-      #up(20) difference() {
+      up(20) difference() {
         cyl(d1=max(ds), d2=15.83, l=0.75, anchor=TOP);
 
         cyl(d=9.5, l=2);

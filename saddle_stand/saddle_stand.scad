@@ -20,7 +20,7 @@ include <BOSL2/rounding.scad>
 
 $fn=0;
 // $fa=6;
-$fa=floor(360/32);
+$fa=floor(360/64);
 $fs=2;
 
 // $fn=16;
@@ -29,18 +29,29 @@ $fs=2;
 
 // BIGNUM=100;
 
+// Total height, assembled
 h = 900;
+// Total width, assembled
 w = 500;
+// Total depth, assembled
 d = 320;
+// Plank thickness (some parts double this)
 th = 18;
+// Plank width
 ww = 50;
+// Carved horse thickness
 horse_h = 1.3;
 
+// (Arc… something)
 _d_ = 30;
 _d = d+_d_;
 
-MODE="help";  // [ "_horse", "plank0", "plank1", "plank2", "spine", "_planks", "shelf", "_end", "end_part1.1", "end_part1.2", "end_part1.3", "end_part1.4", "end_part2.1", "end_part2.2", "end_part2.3", "end_part2.4", "assy", "help" ]
-MODES=           [ "plank0", "plank1", "plank2", "spine", "_planks", "shelf", "_end", "end_part1.1", "end_part1.2", "end_part1.3", "end_part1.4", "end_part2.1", "end_part2.2", "end_part2.3", "end_part2.4", "assy", str("help") ];
+// MODE: ('_' prefex means it's an assembly, not to be built)
+MODE="help";  // [ _horse, plank0, plank1, plank2, spine, _planks, shelf, _end, end_part1.1, end_part1.2, end_part1.3, end_part1.4, end_part2.1, end_part2.2, end_part2.3, end_part2.4, _build, assy, help ]
+MODES=           [ "plank0", "plank1", "plank2", "spine", "_planks", "shelf", "_end", "end_part1.1", "end_part1.2", "end_part1.3", "end_part1.4", "end_part2.1", "end_part2.2", "end_part2.3", "end_part2.4", "_build", "assy", str("help") ];
+
+// SUBMODE: 0 = lots of carving; 1 = less carving
+SUBMODE = 0;  // [ 0, 1 ]
 
 if(MODE=="plank0") plank(v=0);
 else if(MODE=="plank1") plank(v=1);
@@ -48,16 +59,21 @@ else if(MODE=="plank2") plank(v=2);
 else if(MODE=="spine") spine(orient=BACK, anchor=BACK) position(FRONT);
 else if(MODE=="_planks") planks();
 else if(MODE=="_end") end();
-else if(MODE=="end_part1.1") ends(1, 1);
-else if(MODE=="end_part1.2") ends(1, 2);
+else if(MODE=="end_part1.1.1") ends(1, 1, 1);
+else if(MODE=="end_part1.1.2") ends(1, 1, 2);
+else if(MODE=="end_part1.2.1") ends(1, 2, 1);
+else if(MODE=="end_part1.2.2") ends(1, 2, 2);
 else if(MODE=="end_part1.3") ends(1, 3);
 else if(MODE=="end_part1.4") ends(1, 4);
-else if(MODE=="end_part2.1") ends(2, 1);
-else if(MODE=="end_part2.2") ends(2, 2);
+else if(MODE=="end_part2.1.1") ends(2, 1, 1);
+else if(MODE=="end_part2.1.2") ends(2, 1, 2);
+else if(MODE=="end_part2.2.1") ends(2, 2, 1);
+else if(MODE=="end_part2.2.2") ends(2, 2, 2);
 else if(MODE=="end_part2.3") ends(2, 3);
 else if(MODE=="end_part2.4") ends(2, 4);
 else if(MODE=="shelf") shelf();
 else if(MODE=="_horse") horse();
+else if(MODE=="_build") build();
 else if(MODE=="assy") {
   stand();
 
@@ -83,11 +99,11 @@ module stand(anchor=BOTTOM, spin=0, orient=UP) {
 module planks(clearance=0, anchor=BOTTOM, spin=0, orient=UP) {
   attachable(anchor=anchor, spin=spin, orient=orient, size=[w,d,h], cp=[0,0,h/2]) {
     union() {
-      let(hh=h*2/3) for(z=[ww/2,520]) up(z) {
+      for(z=[ww/2,520]) up(z) {
         yflip_copy() fwd(d/2) plank(clearance=clearance, v=1, anchor=TOP, orient=FRONT, color="Sienna");
-        up(ww/2+$slop) shelf($tags="hide");
+        up(ww/2+$slop) shelf($tags="hide", clearance=clearance);
       }
-      up(h-d/2-_d_/2) yflip_copy() let(ang=20) for(i=[ang:ang:60]) xrot(-90+i-2) fwd(_d/2-th) plank(clearance=clearance, v=(i/ang) % 2, orient=FRONT, anchor=BOTTOM);
+      up(h-d/2-_d_/2) yflip_copy() let(ang=20) for(i=[ang:ang:60]) xrot(-90+i-2) fwd(_d/2-th) plank(clearance=clearance, v=((i/ang) % 2)+SUBMODE, orient=FRONT, anchor=BOTTOM);
       up(h-th) spine(clearance=clearance);
     }
     children();
@@ -99,10 +115,11 @@ module planks(clearance=0, anchor=BOTTOM, spin=0, orient=UP) {
 // v==2: no horses
 module plank(clearance=0, v=0, anchor=BOTTOM, spin=0, orient=UP, color="BurlyWood") {
   n = (v==0 ? 4 : (v==1 ? 5 : 0));
+  s = [w,ww,th-horse_h];
 
-  if(clearance==0) echo(BOM = str("plank", v));
+  if(clearance==0) echo(BOM = str("plank", v, " ", s));
 
-  attachable(anchor=anchor, spin=spin, orient=orient, size=[w,ww,th-horse_h], cp=[0,0,(th-horse_h)/2]) {
+  attachable(anchor=anchor, spin=spin, orient=orient, size=s, cp=[0,0,(th-horse_h)/2]) {
     color(color)
     render()
     xrot(-90)
@@ -114,8 +131,12 @@ module plank(clearance=0, v=0, anchor=BOTTOM, spin=0, orient=UP, color="BurlyWoo
   }
 }
 
-module shelf(anchor=BOTTOM, spin=0, orient=UP) {
-  attachable(anchor=anchor, spin=spin, orient=orient, size=[w,d,th], cp=[0,0,th/2]) {
+module shelf(anchor=BOTTOM, spin=0, orient=UP, clearance=0) {
+  s = [w,d,th];
+
+  if(clearance==0) echo(BOM = str("shelf ", s));
+
+  attachable(anchor=anchor, spin=spin, orient=orient, size=s, cp=[0,0,th/2]) {
     color("Sienna")
     render()
     difference() {
@@ -128,12 +149,9 @@ module shelf(anchor=BOTTOM, spin=0, orient=UP) {
 }
 
 module end(anchor=BOTTOM, spin=0, orient=UP) {
-
-  for(j=[1:2], i=[1:4]) echo(BOM = str("end_part", j, ".", i));
-
   attachable(anchor=anchor, spin=spin, orient=orient, size=[2*th,d, h], cp=[0,0,h/2]) {
     color("SaddleBrown")
-    // render()
+    render()
     difference() {
       rot([90,0,90]) linear_extrude(2*th, center=true, convexity=3) difference() {
         end_shape();
@@ -147,49 +165,86 @@ module end(anchor=BOTTOM, spin=0, orient=UP) {
   }
 }
 
-module ends(pt_maj, pt_min) {
+module build() {
+  pad=6;
+  planks_sp=4*ww+3*3+pad;
 
-  echo(BOM = str("end", pt_maj, ".", pt_min));
-
-  hh = h-220;
-  www = d-2*ww-0.1;
-
-  intersect = pt_maj == 1
-              ? [hh, BIGNUM, 2*th]
-              : [BIGNUM, www, 2*th];
-  shift = pt_maj == 1
-          ? ( pt_min <= 2
-              ? [-30, 0]
-              : ( pt_min == 3
-                ? [-hh - 30, 0]
-                : [ hh - 30, 0] ))
-          : ( pt_min <= 2
-              ? [0, 0]
-              : ( pt_min == 3
-                ? [0, -www]
-                : [0,  www] ));
-  align = pt_maj == 1
-          ? ( pt_min >= 3
-              ? CENTER
-              : ( pt_min == 1
-                ? FWD
-                : BACK ))
-          : ( pt_min >= 3
-              ? CENTER
-              : ( pt_min == 1
-                ? RIGHT
-                : LEFT ));
-
-  union() {
-    intersection() {
-      translate(shift) cuboid(intersect, anchor=align);
-      end(anchor=RIGHT, orient=RIGHT);
+  intersection() {
+    cuboid([3000,2000,th], anchor=ALLNEG);
+    union() {
+      right(0) {
+        render() xcopies(spacing=ww+3, n=4, sp=405-4*ww-3*3) plank(v=2, spin=90, anchor=BACK+LEFT+BOTTOM);
+        render() translate([405-planks_sp           ,0]) end_part(2, anchor=FRONT+RIGHT);
+        render() translate([405-planks_sp-1*(ww+pad),0]) end_part(2, anchor=FRONT+RIGHT);
+        render() translate([405-planks_sp-2*(ww+pad),0]) end_part(3, anchor=FRONT+RIGHT);
+        render() translate([405-planks_sp           ,d+pad]) end_part(3, anchor=FRONT+RIGHT);
+        render() translate([405-planks_sp-2*(ww+pad),d+pad]) xcopies(spacing=ww+pad, sp=0) end_part(8, anchor=FRONT+RIGHT);
+      }
+      right(500) {
+        render() for(j=[d/2, 3/2*d+pad])
+          translate([405,j]) end_part(1, anchor=FRONT, spin=90)
+            attach(BACK, FRONT, overlap=54-pad) end_part(7)
+              attach(BACK, BACK, overlap=44-pad) end_part(0)
+                attach(FRONT, BACK, overlap=-pad) end_part(6);
+      }
+      right(1000) {
+        right(405) shelf(anchor=RIGHT+BACK+BOTTOM, spin=-90);
+        translate([405-d-pad,0]) end_part(4, anchor=RIGHT+FRONT)
+          attach(BACK, FRONT, overlap=-pad) end_part(5);
+        translate([405,w+pad]) end_part(11, anchor=FRONT+LEFT, spin=90) attach(RIGHT, LEFT, overlap=-pad) end_part(9);
+        translate([405,pad+h-250]) end_part(10, anchor=FRONT+LEFT, spin=90);
+      }
+      right(1500) {
+        right(405) shelf(anchor=RIGHT+BACK+BOTTOM, spin=-90);
+        translate([405-d-pad,0]) end_part(4, anchor=RIGHT+FRONT)
+          attach(BACK, FRONT, overlap=-pad) end_part(5);
+        translate([405,w+pad]) end_part(11, anchor=FRONT+LEFT, spin=90) attach(RIGHT, LEFT, overlap=-pad) end_part(9);
+        translate([405,pad+h-250]) end_part(10, anchor=FRONT+LEFT, spin=90);
+      }
+      right(2000) {
+        translate([405,0]) end_part(6, anchor=RIGHT+FRONT);
+        translate([405,pad+h-250]) end_part(9, anchor=FRONT+LEFT, spin=90)
+          attach(LEFT, RIGHT, overlap=-pad) end_part(9);
+      }
     }
+  }
+
+
+  *down(BIGNUM) xcopies(spacing=500, n=4, sp=0)
+    color(($idx%2==0?"green":"yellow"),0.5)
+    rect([405,800]);
+}
+
+module end_part(n, anchor=CENTER, spin=0, orient=UP) {
+  assert(n>=0); assert(n<=11);
+
+  parts=[
+    //                                          fwd, x,       y,      z, anchor         size,                         cp
+    let(b=35, s=260, f= h/2+b, y=          s ) [ f, BIGNUM  , y, BIGNUM, CENTER      ,  [ d, h/2-(abs(f)-y/2), 2*th], [ 0,       -f+y/2-(h/2-(abs(f)-y/2))/2,0] ]
+  , let(b=35, s=260, f=-h/2+b, y=          s ) [ f, BIGNUM  , y, BIGNUM, CENTER      ,  [ d, h/2-(abs(f)-y/2), 2*th], [ 0,       -f-y/2+(h/2-(abs(f)-y/2))/2,0] ]
+  , let(b=35, s=260, f=     b, y=(h-s)/2     ) [ f, BIGNUM/2, y, BIGNUM, FRONT+LEFT  ,  [ww,                y, 2*th], [ (d/2-ww/2),-f+y/2, 0] ]
+  , let(b=35, s=260, f=     b, y=(h-s)/2     ) [ f, BIGNUM/2, y, BIGNUM, BACK+LEFT   ,  [ww,                y, 2*th], [ (d/2-ww/2),-f-y/2, 0] ]
+  , let(b=35, s=260, f=     b, y=(h-s)/2     ) [ f, BIGNUM/2, y, BIGNUM, FRONT+RIGHT ,  [ww,                y, 2*th], [-(d/2-ww/2),-f+y/2, 0] ]
+  , let(b=35, s=260, f=     b, y=(h-s)/2     ) [ f, BIGNUM/2, y, BIGNUM, BACK+RIGHT  ,  [ww,                y, 2*th], [-(d/2-ww/2),-f-y/2, 0] ]
+  , let(b=25, s=190, f= h/2+b, y=          s ) [ f, BIGNUM  , y, BIGNUM, CENTER      ,  [ d, h/2-(abs(f)-y/2), 2*th], [ 0,       -f+y/2-(h/2-(abs(f)-y/2))/2,0] ]
+  , let(b=25, s=190, f=-h/2+b, y=          s ) [ f, BIGNUM  , y, BIGNUM, CENTER      ,  [ d, h/2-(abs(f)-y/2), 2*th], [ 0,       -f-y/2+(h/2-(abs(f)-y/2))/2,0] ]
+  , let(b=25, s=190, f=   3*b, y=(h-s)/2+2*b ) [ f, BIGNUM/2, y, BIGNUM, FRONT+LEFT  ,  [ww,                y, 2*th], [ (d/2-ww/2),-f+y/2, 0] ]
+  , let(b=25, s=190, f=   3*b, y=(h-s)/2-2*b ) [ f, BIGNUM/2, y, BIGNUM, BACK+LEFT   ,  [ww,                y, 2*th], [ (d/2-ww/2),-f-y/2, 0] ]
+  , let(b=25, s=190, f=   3*b, y=(h-s)/2+2*b ) [ f, BIGNUM/2, y, BIGNUM, FRONT+RIGHT ,  [ww,                y, 2*th], [-(d/2-ww/2),-f+y/2, 0] ]
+  , let(b=25, s=190, f=   3*b, y=(h-s)/2-2*b ) [ f, BIGNUM/2, y, BIGNUM, BACK+RIGHT  ,  [ww,                y, 2*th], [-(d/2-ww/2),-f-y/2, 0] ]
+  ];
+
+  attachable(anchor=anchor, spin=spin, orient=orient, size=parts[n][5], cp=parts[n][6]) {
+    render()
+    intersection() {
+      zrot(-90) end(orient=LEFT, anchor=CENTER);
+      fwd(parts[n][0]) cuboid([parts[n][1],parts[n][2],parts[n][3]], anchor=parts[n][4]);
+    }
+    children();
   }
 }
 
 module spine(clearance=0, anchor=BOTTOM, spin=0, orient=UP, color="BurlyWood") {
-
   if(clearance==0) echo(BOM = "spine");
 
   p = flatten([

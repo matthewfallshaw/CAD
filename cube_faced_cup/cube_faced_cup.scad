@@ -81,7 +81,7 @@ module basket(vase_mode=false) {
         if(vase_mode) {
           bottom_half(z=rim_dia/2)
           scale([1,1,1.15])
-          torus(r=ring_dia/2-rim_bump,d2=rim_dia);
+          torus(r_maj=ring_dia/2-rim_bump,d_min=rim_dia);
         } else {
           torus(r=ring_dia/2,d2=rim_dia);
         }

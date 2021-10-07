@@ -26,9 +26,9 @@ G28 W ; home all without mesh bed level
 G0 Z3; Raise nozzle before move
 G0 X125 Y180 F10200; Move nozzle to PINDA warming position
 G0 Z0.15 F10200; Lower nozzle to PINDA warming position
-; Wait for PINDA warmup
-M117 PINDA warmup
-M860 S35 ; wait for PINDA temp to stabilize
+; Wait for PINDA warmup (… but Super PINDA reports 0°C temp)
+; M117 PINDA warmup
+; M860 S35 ; wait for PINDA temp to stabilize
 M140 S[first_layer_bed_temperature] ; set target bed temp
 G0 Z3; Raise nozzle before move
 M300 S40 P10 ; chirp

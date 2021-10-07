@@ -18,10 +18,13 @@ angle = 0; // [-90 : 180]
 hinge=["monitor",width,depth,thickness,pin_diameter,knuckle_diameter,
        knuckles,M3_dome_screw,screws,clearance,margin];
 
-// build_plate();
-// hinge_assembly(hinge,angle=-30);
-male_hinge();
-pin();
+MODE="assy";  // [ male, female, pin, build, assy ]
+
+if(MODE=="build") build_plate();
+else if(MODE=="male") male_hinge();
+else if(MODE=="female") female_hinge();
+else if(MODE=="pin") pin();
+else hinge_assembly(hinge,angle=-30);
 
 module build_plate() {
   male_hinge();
@@ -38,12 +41,9 @@ module pin() {
 }
 
 module male_hinge() {
-  difference() {
-    union() {
-      hinge_male(hinge);
-      hinge_screw_positions(hinge) cylinder(h=thickness,d=4);
-    }
-    translate([-width/2+28,depth/2+5+1]) cube([60,depth-10+2,10],center=true);
+  union() {
+    hinge_male(hinge);
+    hinge_screw_positions(hinge) cylinder(h=thickness,d=4);
   }
 }
 
