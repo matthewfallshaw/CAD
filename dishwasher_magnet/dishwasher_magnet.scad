@@ -55,6 +55,7 @@ module postit() {
   sc=0.98;
   hsc=(16-w*(1-sc))/16;
 
+  zrot(45)
   difference() {
     note_block();
 
@@ -67,9 +68,17 @@ module postit() {
 
   module note_block(w=w) {
     union() {
-      postit_top(w=w);
-      straight_text(w=w);
-      curved_text(w=w);
+      color("yellow")
+        postit_top(w=w);
+
+      color("grey")
+        intersection() {
+          union() {
+            straight_text(w=w);
+            curved_text(w=w);
+          }
+          up(0.8) postit_top(w=w);
+        }
     }
   }
 
@@ -126,7 +135,7 @@ module postit() {
       , col_wrap=true
       )
     );
-    vnf=vnf_compact([
+    vnf=vnf_merge([
       walls
     , vnf_reverse_faces(vnf_add_face([[],[]], sbb))
     , postit_top
@@ -136,20 +145,32 @@ module postit() {
     vnf_polyhedron(vnf);
   }
 
-  module straight_text(w=100) {
+  module straight_text(w=100,thickness) {
+    thickness = thickness ? thickness : th+text_th;
+
     color("grey")
     translate([w/2,w/2]) left_half(x=1)
-      linear_extrude((th+text_th)) text("Dirty",size=24*w/100,font="Noteworthy:style=Light",valign="center",halign="center");
+      linear_extrude((thickness)) 2Dtext(w=w);
   }
 
   module curved_text(w=100) {
-    color("grey") let(r=40*w) translate([w/2,w/2])
+    r=40*w;
+
+    color("grey") translate([w/2,w/2])
       difference() {
         right_half(x=-1) up(r+th+text_th-0.1) zrot(-45) yrot(90) zrot(-90)
           yflip() cylindrical_extrude(or=r+text_th+th-0.4,ir=r,orient=LEFT,$fn=($fn>64?$fn:64))
-            zrot(45) text("Dirty",size=24*w/100,font="Noteworthy:style=Light",valign="center",halign="center");
+          zrot(45) 2Dtext(w=w);
 
-        translate([3,0,th+text_th]) cuboid(rb3(), rounding=3, anchor=RIGHT+BOTTOM);
-      }
+        translate([3,0,th+text_th]) cuboid(rb3, rounding=3, edges=RIGHT+BOTTOM, anchor=RIGHT+BOTTOM);
+
+    translate([w/2,w/2]) up(r+th+text_th-0.1) zrot(-45) yrot(90) zrot(-90)
+        yflip() cyl(r=r,l=BIGNUM*BIGNUM,orient=LEFT,$fn=($fn>64?$fn:64));
+    }
+  }
+
+  module 2Dtext(w) {
+    assert(w!=undef);
+    text("Dirty",size=24*w/100,font="Noteworthy:style=Light",valign="center",halign="center");
   }
 }

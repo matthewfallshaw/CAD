@@ -3,14 +3,14 @@ include <BOSL2/threading.scad>
 include <BOSL2/fnliterals.scad>
 
 // $fn=0;
-// $fa=12;
-// $fs=2;
+$fa=360/16;
+$fs=2;
 
 // $fn=16;
 // $fn=32;
-// $fn=64;
+$fn=64;
 // $fn=128;
-$fn=256;
+// $fn=256;
 
 // BIGNUM=100;
 
@@ -18,6 +18,8 @@ dust_dia=100;
 spindle_dia=80;
 th=5;
 h=40;
+v1bump = 10-6.5;
+dust_closer_h=13.5;
 
 magnet=[5,5,4];
 
@@ -37,7 +39,7 @@ normal_line=line_normal(tangent_line);
 magnet_line=[for(i=[0:1]) let(d=magnet.x/2+3*0.9, tl=tangent_line, nl=normal_line) [tl[i].x+d*nl.x, tl[i].y+d*nl.y]];
 
 
-MODE="boot";  // [ boot, skirt, assy ]
+MODE="boot";  // [ boot, bootv2, skirt, dust_mount, dust_mountv2, spindle_mount, spindle, assy, _assyv2 ]
 // MODE="skirt";
 // MODE="assy";
 
@@ -45,20 +47,44 @@ MODE="boot";  // [ boot, skirt, assy ]
 // bottom_half(z=-0.5)
 // back_half()
 if(MODE=="boot") boot();
+else if(MODE=="bootv2") bootv2();
 else if(MODE=="skirt") skirt();
-else {
+else if(MODE=="dust_mount") dust_mount();
+else if(MODE=="dust_mountv2") dust_mountv2();
+else if(MODE=="spindle_mount") spindle_mount();
+else if(MODE=="spindle") spindle();
+else if(MODE=="_assyv2") assyv2();
+else assy();
+
+module assy() {
   union() {
     boot();
     down($slop) color("darkSlateGray") skirt();
+    // spindle();
+    // scan();
+  }
+}
+
+module assyv2() {
+  union() {
+    bootv2();
+    spindle();
+    // scan();
   }
 }
 
 module boot() {
   difference() {
     union() {
-      boot_base();
-      spindle_mount();
-      move(loc_dust) dust_mount();
+      difference() {
+        union() {
+          boot_base();
+          spindle_mount();
+          move(loc_dust) dust_mount();
+        }
+
+        // dust_mount_flow_path(wall=th) ;
+      }
       // magnet boss
       left_half(x=loc_dust.x+dust_dia/2)
       yflip_copy() path_spread(magnet_line, n=3) magnet_boss();
@@ -66,6 +92,8 @@ module boot() {
 
     // magnet inserts
     yflip_copy() path_spread(magnet_line, n=3) up(0.2) magnet_hole(FRONT);
+
+    spindle();
   }
 }
 
@@ -90,20 +118,65 @@ module boot_base() {
 
     // spindle
     cyl(d=spindle_dia-6*th, l=BIGNUM);
+    up(th) cyl(d=spindle_dia+2*th, l=h+th, anchor=BOTTOM);
   }
 }
 
-module spindle_mount() {
+module bootv2() {
+  render()
   difference() {
-    cyl(d=spindle_dia+2*th, l=h+th, anchor=BOTTOM);
+    union() {
+      spindle_mount(v=1);
+      dust_mountv2();
+      bootv2_supports();
+    }
+
+    // closing ring cut
+    up(h+v1bump) difference() {
+      cyl(d=spindle_dia+2*th+0.4, h=13.5, anchor=TOP);
+
+      cyl(d=spindle_dia+2*th-0.8, h=BIGNUM);
+    }
+  }
+}
+
+module bootv2_supports() {
+  union() {
+    difference() {
+      cyl(d=spindle_dia+2*th, l=2*c_lh, anchor=TOP);
+
+      cyl(d=spindle_dia-6*th, l=BIGNUM);
+      main_tube();
+    }
+    intersection() {
+      main_tube();
+      zrot_copies(n=12) cuboid([spindle_dia,4*c_lw,c_lh], anchor=LEFT+TOP);
+    }
+  }
+
+  module main_tube() {
+    difference() {
+      cyl(d=spindle_dia+2*th-6*c_lw, l=BIGNUM);
+
+      cyl(d=spindle_dia-6*th+6*c_lw, l=BIGNUM);
+    }
+  }
+}
+
+module spindle_mount(v=0) {
+  difference() {
+    cyl(d=spindle_dia+2*th, l=h+th+v*v1bump, anchor=BOTTOM);
 
     up(th) cyl(d=spindle_dia, l=BIGNUM, chamfer1=0.5, anchor=BOTTOM);
-    zrot_copies(n=3) up(th) {
-      for(i=[0:360/9:360/3-c_eps]) zrot(i) up(8/2) cyl(d=8, l=BIGNUM, orient=RIGHT, anchor=BOTTOM);
-      cuboid([BIGNUM,2,BIGNUM], anchor=BOTTOM+LEFT);
+    let(n=5) zrot_copies(n=n) up(th+v*v1bump+10) {
+      // for(i=[0:360/(2*n):360/n-c_eps]) zrot(i)
+      up(8/2) {
+        cyl(d=8, l=BIGNUM, orient=RIGHT, anchor=BOTTOM, $fn=6);
+        cuboid([BIGNUM,2,BIGNUM], anchor=BOTTOM+LEFT);
+      }
     }
-    up(h) difference() {
-      cyl(d=spindle_dia+2*th+c_eps, h=13.5, anchor=TOP);
+    up(h+v*v1bump) difference() {
+      cyl(d=spindle_dia+2*th+c_eps, h=dust_closer_h, anchor=TOP);
 
       cyl(d=spindle_dia+2*th-0.8, h=BIGNUM);
     }
@@ -111,17 +184,125 @@ module spindle_mount() {
   }
 }
 
-module dust_mount() {
+module dust_mount(anchor=BOTTOM, spin=0, orient=UP) {
+  l=h+3*th;
+
+  attachable(anchor=anchor, spin=spin, orient=orient, d=dust_dia, l=l, cp=[0,0,l/2]) {
+    difference() {
+      union() {
+        cyl(d=dust_dia, l=h+3*th, anchor=BOTTOM);
+        up(3*th) trapezoidal_threaded_rod( d=dust_dia+5, l=h, pitch=15
+                                         , thread_angle=35, left_handed=true, anchor=BOTTOM
+                                         , higbee=20
+                                         );
+      }
+
+      cyl(d=dust_dia-2*th, l=BIGNUM);
+    }
+    children();
+  }
+}
+
+module dust_mountv2() {
+  // r = -(loc_dust.x-dust_dia/2*cos(45));
+  d = 124;
+  d_=d;
+  r=1.2*d_;
+  spindle_pt = [0,0,0];
+  scoop_d = spindle_dia+26;
+  _th = 3;
+  shift=120;
+
+  render()
+  top_half(z=-20)
   difference() {
     union() {
-      cyl(d=dust_dia, l=h+3*th, anchor=BOTTOM);
-      up(3*th) trapezoidal_threaded_rod( d=dust_dia+5, l=h, pitch=15
-                                       , thread_angle=35, left_handed=true, anchor=BOTTOM
-                                       , higbee=20
-                                       );
+      // main hose
+      move(x=-shift, z=50) yrot(-45) dust_mount()
+        attach(BOTTOM, TOP) tube(od=dust_dia, wall=th, l=shift);
+      // bottom ellipse
+      difference() {
+        intersection() {
+          translate([-50,0,-20]) cyl(d=dust_dia/cos(45), l=_th, anchor=BOTTOM);
+          move(x=-shift, z=50) yrot(-45) cyl(d=dust_dia, l=BIGNUM);
+        }
+
+        translate([-25,0,-20])  scale([1/cos(45),1,1]) cyl(d=dust_dia-3*th, l=3*_th);
+      }
+      // bottom skirt
+      difference() {
+        cyl(d=scoop_d, l=40, chamfer2=26/2);
+
+        move(x=-shift, z=50) yrot(-45) cyl(d=dust_dia-2*th, l=BIGNUM);
+      }
+      // ring seal
+      let(_th=3*c_lw)
+      intersection() {
+        up(h+v1bump+_th) cyl(d=spindle_dia+2*th+0.4+2*_th, h=13.5+2*_th, chamfer1=1.5*_th, anchor=TOP);
+
+        move(x=-shift, z=50) yrot(-45) cyl(d=dust_dia-th, l=BIGNUM);
+      }
     }
 
-    cyl(d=dust_dia-2*th, l=BIGNUM);
+    down(_th*cos(45)) cyl(d=scoop_d-2*_th, l=40, chamfer2=26/2);
+    cyl(d=spindle_dia-6*th, l=BIGNUM);
+    up(th) cyl(d=spindle_dia, l=BIGNUM, chamfer1=0.5, anchor=BOTTOM);
+  }
+
+  module dust_path(d) {
+    dust_pt = [-(d_/2-(spindle_dia/2+15)), 0, -25];
+    sec = move(dust_pt, oval(d=d));
+
+    sweep(
+      sec
+    , [ for(a=[0:5:45]) move(x=-a,z=-20)*yrot(-a, cp=[-r,0,0])*scale(1-a/(45*d/24)) ]
+    );
+  }
+  // yrot(-45, cp=[r,0,r])
+  // difference() {
+  //   union() {
+  //     up(r) trapezoidal_threaded_rod( d=dust_dia+8, l=h, pitch=15
+  //                                      , thread_angle=35, left_handed=true, anchor=BOTTOM
+  //                                      , higbee=20
+  //                                      );
+  //     up(r) cyl(d=dust_dia, l=h, anchor=BOTTOM);
+  //   }
+
+  //   cyl(d=dust_dia-2*th, l=BIGNUM);
+  // }
+}
+
+module dust_mount_skirt() {
+
+}
+
+module dust_mount_flow_path(wall, r) {
+  $fa=( $fa==0
+      ? 360/$fn
+      : $fa
+      );
+  assert(wall!=undef); assert(r!=undef);
+
+  dia = dust_dia-2*th;
+  function rounding(d,i) = let(final=8, f=($fa-i)*(d-2*final)/2/$fa+final) min(f,d/2);
+  function yside(xside, rnd) = (6362+(4-PI)*rnd*rnd)/xside;
+  function area(x, y, r) = let(as=x*y, ars=4*r*r, ar=PI*r*r) as-ars+ar;
+
+  shapes = [
+    for(i=[(wall==0?-1:0):$fa+(wall==0?1:0)])
+    yrot( -i*180/$fa/4
+        , cp=[r,0,0]
+        , p=let( factor=min((1-i/$fa)/2+0.5,1), xside=(dia)*factor, rnd=rounding(xside,i)
+               , yside=yside(xside, rnd)
+               , s=rect( [xside+2*wall, yside+2*wall], rounding=rnd+wall, center=true)
+               )
+            path3d(s)
+    )
+  ];
+
+  union() {
+    up(r) skin(shapes, slices=0, convexity=10);
+    up(r-c_eps) cyl(d=dia+2*wall, l=wall==0?BIGNUM:h, anchor=BOTTOM);
   }
 }
 
@@ -163,4 +344,17 @@ module magnet_hole(hole_orientation=DOWN) {
     cuboid(magnet+r3($slop), anchor=BOTTOM);
     up(magnet.z/2) cyl(d=0.1, l=magnet.z*2, orient=hole_orientation, anchor=BOTTOM);
   }
+}
+
+module spindle() {
+  color("gray", 0.7) union() {
+    up(th) cyl(d=spindle_dia, h=150, anchor=BOTTOM) attach(BOTTOM, TOP) cyl(d=35, l=5)
+      attach(BOTTOM, TOP) cyl(d=20, l=40);
+    move(x=spindle_dia/2+15, z=-20) cuboid([50,100,BIGNUM], anchor=LEFT+BOTTOM);
+    move(z=57) let(l=110) cuboid([l-5,l,20], anchor=BOTTOM);
+  }
+}
+
+module scan() {
+  #translate([2,3]) import("scan1.stl");
 }
